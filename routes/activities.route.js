@@ -20,10 +20,10 @@ router.use((req, res, next) => {
 
 router.route('/')
     .get(activitiesController.findAll)
-    .post(badgesController.create);
+    .post(activitiesController.create);
 
 router.route('/:activityName')
-    .delete(badgesController.delete)
+    .delete(activitiesController.delete)
 
 
 router.all('*', function (req, res) {
