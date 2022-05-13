@@ -17,7 +17,6 @@ router.use((req, res, next) => {
 })
 
 
-
 router.route('/')
     .get(activitiesController.findAll)
     .post(activitiesController.create);

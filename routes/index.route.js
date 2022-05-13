@@ -22,12 +22,9 @@ router.use((req, res, next) => {
 
 
 router.use('/users',usersRoute)
-
-router.use('/badges',badgesRoute)
-
-router.use('/activities',activitiesRoute)
-
-router.use('/emotions',emotionsRoute)
+      .use('/badges',badgesRoute)
+      .use('/activities',activitiesRoute)
+      .use('/emotions',emotionsRoute);
 
 
 
