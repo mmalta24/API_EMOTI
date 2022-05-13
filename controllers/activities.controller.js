@@ -15,7 +15,7 @@ exports.create = async (req, res) => {
     try { // if save is successful, the returned promise will fulfill with the document saved
         await activity.save(); // save document in the badges DB collection
         res.status(201).json({
-            success: true, msg: "New activity was created.", URL: `/badge/${activity.title}`
+            success: true, msg: "New activity was created.", URL: `/activities/${activity.title}`
         });
     }
     catch (err) {
@@ -55,9 +55,17 @@ exports.findAll = async (req, res) => {
 
     try {
         // find function parameters: filter, projection (select) / returns a list of documents
-        let data = await Badges.find(queries)
+        let data = await Activities.find(queries)
             .exec(); // execute the query
-        res.status(200).json(data);
+        if(data.length==0){
+            res.status(404).json({
+                message: "Cannot find any activity!"
+            });
+        }
+        else{
+            res.status(200).json(data);
+        }
+        
     }
     catch (err) {
         res.status(500).json({
