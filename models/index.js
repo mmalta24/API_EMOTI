@@ -15,4 +15,6 @@ db.mongoose
     process.exit();
   });
 
+db.users = require("./users.model.js")(mongoose);
+db.badges = require("./badges.model.js")(mongoose);
 module.exports = db;
