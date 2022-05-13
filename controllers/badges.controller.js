@@ -1,16 +1,16 @@
 const db = require("../models");
 const Badges = db.badges;
-// Create and Save a new Tutorial: use object.save()
+// Create and Save a new BADGE: use object.save()
 
 exports.create = async (req, res) => {
-    const badge = new Badges({ // create an instance of a Tutorial model
+    const badge = new Badges({ // create an instance of a BADGE model
         badgeName: req.body.badgeName,
         badgeIMG: req.body.badgeIMG,
         pointsNedded: req.body.pointsNedded,
         badgeEmotion:req.body.badgeEmotion
     });
     try { // if save is successful, the returned promise will fulfill with the document saved
-        await badge.save(); // save document in the tutorials DB collection
+        await badge.save(); // save document in the badges DB collection
         res.status(201).json({
             success: true, msg: "New badge created.", URL: `/badge/${badge.badgeName}`
         });
@@ -34,7 +34,7 @@ exports.create = async (req, res) => {
 // retrieve all badges / or find by title
 exports.findAll = async (req, res) => {
     const emotion = req.query.emotion;
-    // build REGEX to filter tutorials titles with a sub-string - i will do a case insensitive match
+    // build REGEX to filter badges titles with a sub-string - i will do a case insensitive match
         const condition = emotion ? { emotion: new RegExp(title, 'i') } : {};
     try {
         // find function parameters: filter, projection (select) / returns a list of documents
@@ -50,10 +50,10 @@ exports.findAll = async (req, res) => {
     }
 };
 
-// Delete a Tutorial (given its id)
+// Delete a BADGE (given its id)
 exports.delete = async (req, res) => {
     try {
-        const badge = await Tutorial.findOneAndRemove({badgeName:req.params.badge}).exec();
+        const badge = await Badges.findOneAndRemove({badgeName:req.params.badge}).exec();
         if (!badge) // returns the deleted document (if any) to the callback
             res.status(404).json({
                 message: `Not found badge with badgeName=${req.params.badge}.`

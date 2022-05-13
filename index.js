@@ -9,11 +9,9 @@ const host = process.env.HOST;
 app.use(cors());
 app.use(express.json());
 
-app.get("/api", function (req, res) {
-  res.status(200).json({ message: "EMOTI API" });
-});
+app.use("/api", require("./routes/index.route"));
 
-app.use("/api/users", require("./routes/users.route.js"));
+//app.use("/api/users", require("./routes/users.route.js"));
 
 // handle invalid routes
 app.get("*", function (req, res) {

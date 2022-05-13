@@ -5,6 +5,8 @@ const db = {};
 
 db.mongoose = mongoose;
 db.url = dbConfig.URL;
+
+console.log(db.url)
 db.mongoose
   .connect(db.url, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {

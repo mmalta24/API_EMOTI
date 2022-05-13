@@ -1,7 +1,7 @@
 const express = require('express');
 
-const usersController = require("../controllers/users.controller");
-const badgesController = require("../controllers/tutorials.controller");
+const usersRoute = require("../routes/users.route");
+const badgesRoute = require("../routes/badges.route");
 
 // express router
 let router = express.Router();
@@ -19,14 +19,14 @@ router.use((req, res, next) => {
 
 
 
-router.use('/users',usersController)
+router.use('/users',usersRoute)
 
-router.use('/badges',badgesController)
+router.use('/badges',badgesRoute)
 
 
 router.all('*', function (req, res) {
     //send an predefined error message 
-    res.status(404).json({ message: 'TUTORIALS: what???' });
+    res.status(404).json({ message: 'INDEX: what???' });
 })
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 
-const badgesController = require("../controllers/tutorials.controller");
+const badgesController = require("../controllers/badges.controller");
 
 // express router
 let router = express.Router();
@@ -28,7 +28,7 @@ router.route('/:badge')
 
 router.all('*', function (req, res) {
     //send an predefined error message 
-    res.status(404).json({ message: 'TUTORIALS: what???' });
+    res.status(404).json({ message: 'BADGES: what???' });
 })
 
 module.exports = router;
