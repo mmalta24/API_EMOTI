@@ -1,9 +1,6 @@
 const express = require('express');
 
-const usersRoute = require("../routes/users.route");
-const badgesRoute = require("../routes/badges.route");
-const activitiesRoute=require("../routes/activities.route")
-const emotionsRoute=require("../routes/emotions.route")
+const activitiesController = require("../controllers/activities.controller");
 
 // express router
 let router = express.Router();
@@ -21,19 +18,17 @@ router.use((req, res, next) => {
 
 
 
-router.use('/users',usersRoute)
+router.route('/')
+    .get(activitiesController.findAll)
+    .post(badgesController.create);
 
-router.use('/badges',badgesRoute)
-
-router.use('/activities',activitiesRoute)
-
-router.use('/emotions',emotionsRoute)
-
+router.route('/:activityName')
+    .delete(badgesController.delete)
 
 
 router.all('*', function (req, res) {
     //send an predefined error message 
-    res.status(404).json({ message: 'INDEX: what???' });
+    res.status(404).json({ message: 'ACTIVITIES: what???' });
 })
 
 module.exports = router;

@@ -34,8 +34,9 @@ exports.create = async (req, res) => {
 // retrieve all badges / or find by title
 exports.findAll = async (req, res) => {
     const emotion = req.query.emotion;
-    // build REGEX to filter badges titles with a sub-string - i will do a case insensitive match
-        const condition = emotion ? { emotion: new RegExp(title, 'i') } : {};
+    // build REGEX to filter badges emotions with a sub-string - i will do a case insensitive match
+        const condition = emotion ? { badgeEmotion:emotion } : {};
+        console.log(condition);
     try {
         // find function parameters: filter, projection (select) / returns a list of documents
         let data = await Badges.find(condition)
@@ -64,7 +65,7 @@ exports.delete = async (req, res) => {
             });
     } catch (err) {
         res.status(500).json({
-            message: `Error deleting Badge with id=${req.params.badge}.`
+            message: `Error deleting Badge with badgeName=${req.params.badge}.`
         });
     };
 };
