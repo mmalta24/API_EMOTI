@@ -8,6 +8,8 @@ let router = express.Router({ mergeParams: true });
 router.route('/')
     .get(emotionController.findAll)
     .post(emotionController.create)
+
+router.route('/:name')
     .delete(emotionController.remove)
 
 router.all('*', function (req, res) {
