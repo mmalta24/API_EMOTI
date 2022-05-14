@@ -1,36 +1,38 @@
-const express = require('express');
+const express = require("express");
 
 const usersRoute = require("../routes/users.route");
 const badgesRoute = require("../routes/badges.route");
-const activitiesRoute=require("../routes/activities.route")
-const emotionsRoute=require("../routes/emotions.route")
+const activitiesRoute = require("../routes/activities.route");
+const emotionsRoute = require("../routes/emotions.route");
+const classesRoute = require("../routes/classes.route");
 
 // express router
 let router = express.Router();
 
 router.use((req, res, next) => {
-    const start = Date.now();
-    //compare a start time to an end time and figure out how many seconds elapsed
-    res.on("finish", () => { // the finish event is emitted once the response has been sent to the client
-        const end = Date.now();
-        const diffSeconds = (Date.now() - start) / 1000;
-        console.log(`${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`);
-    });
-    next()
-})
+  const start = Date.now();
+  //compare a start time to an end time and figure out how many seconds elapsed
+  res.on("finish", () => {
+    // the finish event is emitted once the response has been sent to the client
+    const end = Date.now();
+    const diffSeconds = (Date.now() - start) / 1000;
+    console.log(
+      `${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`
+    );
+  });
+  next();
+});
 
+router
+  .use("/users", usersRoute)
+  .use("/badges", badgesRoute)
+  .use("/activities", activitiesRoute)
+  .use("/emotions", emotionsRoute)
+  .use("/classes", classesRoute);
 
-
-router.use('/users',usersRoute)
-      .use('/badges',badgesRoute)
-      .use('/activities',activitiesRoute)
-      .use('/emotions',emotionsRoute);
-
-
-
-router.all('*', function (req, res) {
-    //send an predefined error message 
-    res.status(404).json({ message: 'INDEX: what???' });
-})
+router.all("*", function (req, res) {
+  //send an predefined error message
+  res.status(404).json({ message: "INDEX: what???" });
+});
 
 module.exports = router;

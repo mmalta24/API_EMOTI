@@ -1,17 +1,30 @@
 module.exports = (mongoose) => {
-    const schema = mongoose.Schema(
-        {
-            title: { type: String, required: [true, 'Why no Title?'], unique:[true, 'Activity already exist!']},
-            level: {type:String, required: [true,'Why no IMG Level?']},
-            questions: { type: Array, require: [true,'Why no Questions?']},
-            caseIMG:{type:String,require: [true,'Why no caseIMG?']},
-            description:{type:String,require: [true,'Why no Description?']},
-            category:{type:String,require: [true,'Why no Category?']},
-            author:{type:String,require: [true,'Why no Author?']},
-
+  const schema = mongoose.Schema(
+    {
+      title: {
+        type: String,
+        required: [true, "Please provide a title!"],
+        unique: true,
+      },
+      level: {
+        type: String,
+        required: [true, "Please provide level!"],
+        enum: {
+          values: ["Fácil", "Médio", "Difícil"],
+          message: "{VALUE} is not a valid type! Try Fácil, Médio or Difícil.",
         },
-        { timestamps: false,versionKey: false}
-    );
-    const Activity = mongoose.model("activities", schema);
-    return Activity;
+      },
+      questions: { type: Array, required: [true, "Please provide questions!"] },
+      caseIMG: { type: String, required: [true, "Please provide caseIMG!"] },
+      description: {
+        type: String,
+        required: [true, "Please provide description!"],
+      },
+      category: { type: String, required: [true, "Please provide category!"] },
+      author: { type: String, required: [true, "Please provide author!"] },
+    },
+    { timestamps: false, versionKey: false }
+  );
+  const Activity = mongoose.model("activities", schema);
+  return Activity;
 };

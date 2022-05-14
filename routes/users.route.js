@@ -1,37 +1,29 @@
 const express = require("express");
 const usersController = require("../controllers/users.controller");
 
+// express router
 let router = express.Router();
 
-router.use((req, res, next) => {
-  const start = Date.now();
-  //compare a start time to an end time and figure out how many seconds elapsed
-  res.on("finish", () => {
-    // the finish event is emitted once the response has been sent to the client
-    const end = Date.now();
-    const diffSeconds = (Date.now() - start) / 1000;
-    console.log(
-      `${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`
-    );
-  });
-  next();
-});
+router.route("/").get(usersController.findAll).post(usersController.create);
 
 router.route("/login").post(usersController.login);
 
-router.route("/").post(usersController.create).get(usersController.findAll);
-
 router
   .route("/:username")
-  .get(usersController.find)
-  .patch(usersController.edit)
-  .delete(usersController.remove);
+  .get(usersController.findOne)
+  .patch(usersController.update)
+  .delete(usersController.delete);
 
 router
   .route("/:username/children")
+  .get(usersController.findRelations)
   .put(usersController.createRelation)
-  .delete(usersController.removeRelation)
-  .get(usersController.findRelations);
+  .delete(usersController.removeRelation);
+
+router
+  .route("/:username/history")
+  .get(usersController.getHistory)
+  .post(usersController.addHistory);
 
 router.all("*", function (req, res) {
   return res.status(404).json({ message: "USERS: what???" });

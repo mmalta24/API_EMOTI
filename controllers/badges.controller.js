@@ -3,72 +3,80 @@ const Badges = db.badges;
 // Create and Save a new BADGE: use object.save()
 
 exports.create = async (req, res) => {
-    const badge = new Badges({ // create an instance of a BADGE model
-        badgeName: req.body.badgeName,
-        badgeIMG: req.body.badgeIMG,
-        pointsNedded: req.body.pointsNedded,
-        badgeEmotion:req.body.badgeEmotion
+  const badge = new Badges({
+    // create an instance of a BADGE model
+    badgeName: req.body.badgeName,
+    badgeIMG: req.body.badgeIMG,
+    pointsNeeded: req.body.pointsNeeded,
+    badgeEmotion: req.body.badgeEmotion,
+  });
+  try {
+    // if save is successful, the returned promise will fulfill with the document saved
+    await badge.save(); // save document in the badges DB collection
+    return res.status(201).json({
+      success: true,
+      message: "New badge created.",
+      URL: `/badges/${badge.badgeName}`,
     });
-    try { // if save is successful, the returned promise will fulfill with the document saved
-        await badge.save(); // save document in the badges DB collection
-        res.status(201).json({
-            success: true, msg: "New badge created.", URL: `/badge/${badge.badgeName}`
-        });
+  } catch (err) {
+    // capture mongoose validation errors
+    if (err.name === "MongoServerError" && err.code === 11000) {
+      return res.status(422).json({
+        success: false,
+        error: `The badge with name ${badge.badgeName} already exists!`,
+      });
+    } else if (err.name === "ValidationError") {
+      let errors = [];
+      Object.keys(err.errors).forEach((key) => {
+        errors.push(err.errors[key].message);
+      });
+      return res.status(400).json({ success: false, messages: errors });
     }
-    catch (err) {
-        // capture mongoose validation errors
-        if (err.name === "ValidationError") {
-            let errors = [];
-            Object.keys(err.errors).forEach((key) => {
-                errors.push(err.errors[key].message);
-            });
-            return res.status(400).json({ success: false, msgs: errors });
-        }
-        res.status(500).json({
-            success: false,
-            msg: err.message || "Some error occurred while creating the badge. "
-        });
-    }
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Some error occurred while creating the badge.",
+    });
+  }
 };
 
 // retrieve all badges / or find by title
 exports.findAll = async (req, res) => {
-    const emotion = req.query.emotion;
-    // build REGEX to filter badges emotions with a sub-string - i will do a case insensitive match
-        const condition = emotion ? { badgeEmotion:emotion } : {};
-        console.log(condition);
-    try {
-        // find function parameters: filter, projection (select) / returns a list of documents
-        let data = await Badges.find(condition)
-            .exec(); // execute the query
-        res.status(200).json(data);
-    }
-    catch (err) {
-        res.status(500).json({
-            message:
-                err.message || "Some error occurred while retrieving badges."
-        });
-    }
+  const emotion = req.query.emotion;
+  const condition = emotion ? { badgeEmotion: emotion } : {};
+  try {
+    // find function parameters: filter, projection (select) / returns a list of documents
+    let data = await Badges.find(condition).select("-_id").exec(); // execute the query
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Some error occurred while retrieving badges.",
+    });
+  }
 };
 
 // Delete a BADGE (given its id)
 exports.delete = async (req, res) => {
-    try {
-        const badge = await Badges.findOneAndRemove({badgeName:req.params.badge}).exec();
-        if (!badge) // returns the deleted document (if any) to the callback
-            res.status(404).json({
-                message: `Not found badge with badgeName=${req.params.badge}.`
-            });
-        else
-            res.status(200).json({
-                message: `Badge badgeName=${req.params.badge} was deleted successfully.`
-            });
-    } catch (err) {
-        res.status(500).json({
-            message: `Error deleting Badge with badgeName=${req.params.badge}.`
-        });
-    };
+  try {
+    const badge = await Badges.findOneAndRemove({
+      badgeName: req.params.badge,
+    }).exec();
+    if (!badge) {
+      // returns the deleted document (if any) to the callback
+      return res.status(404).json({
+        success: false,
+        error: `Badge with name ${req.params.badge} not found.`,
+      });
+    } else {
+      return res.status(200).json({
+        success: true,
+        message: `Badge with name ${req.params.badge} was deleted successfully.`,
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: `Error deleting badge with name ${req.params.badge}.`,
+    });
+  }
 };
-    
-    
-
