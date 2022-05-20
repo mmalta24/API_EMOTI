@@ -14,7 +14,7 @@ router.route("/login").post(usersController.login);
 
 router
   .route("/:username")
-  .get(usersController.findOne)
+  .get(authController.verifyToken, usersController.findOne)
   .patch(usersController.update)
   .delete(usersController.delete);
 

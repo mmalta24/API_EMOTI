@@ -87,6 +87,12 @@ exports.create = async (req, res) => {
 };
 
 exports.findOne = async (req, res) => {
+  if (req.username !== req.params.username) {
+    return res.status(403).json({
+      success: false,
+      error: `You don't have permission to see ${req.params.username}'s data!`,
+    });
+  }
   try {
     const user = await User.findOne({ username: req.params.username })
       .select("username password email typeUser name imgProfile -_id")
