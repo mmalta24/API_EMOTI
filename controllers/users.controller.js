@@ -1,3 +1,6 @@
+const jwt = require("jsonwebtoken"); //JWT tokens creation (sign())
+const bcrypt = require("bcryptjs"); //password encryption
+const config = require("../config/config.js");
 const { cleanEmptyObjectKeys } = require("../helpers/index");
 const db = require("../models/index");
 const User = db.users;
@@ -9,13 +12,13 @@ exports.login = async (req, res) => {
         .status(400)
         .json({ success: false, error: "Login with username and password!" });
     }
-
     const user = await User.findOne({
       username: req.body.username,
-      password: req.body.password,
     }).exec();
 
-    if (user === null) {
+    const check = bcrypt.compareSync(req.body.password, user.password);
+
+    if (user === null || !check) {
       return res.status(401).json({
         success: false,
         error: "Username and password don't match!",
@@ -29,9 +32,15 @@ exports.login = async (req, res) => {
       });
     }
 
-    return res
-      .status(200)
-      .json({ success: true, username: `${req.body.username}` });
+    const token = jwt.sign(
+      { username: user.username, typeUser: user.typeUser },
+      config.SECRET,
+      {
+        expiresIn: "24h",
+      }
+    );
+
+    return res.status(200).json({ success: true, authKey: token });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -41,10 +50,11 @@ exports.login = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  const encryptedPw = bcrypt.hashSync(req.body.password, 10);
   // create instance of User
   const user = new User({
     username: req.body.username,
-    password: req.body.password,
+    password: encryptedPw,
     name: req.body.name,
     email: req.body.email,
     typeUser: req.body.typeUser,

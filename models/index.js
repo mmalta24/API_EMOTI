@@ -6,7 +6,6 @@ const db = {};
 db.mongoose = mongoose;
 db.url = dbConfig.URL;
 
-console.log(db.url)
 db.mongoose
   .connect(db.url, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -19,6 +18,6 @@ db.mongoose
 
 db.users = require("./users.model.js")(mongoose);
 db.badges = require("./badges.model.js")(mongoose);
-db.activities=require("./activities.model.js")(mongoose);
-db.emotions=require("./emotions.model.js")(mongoose);
+db.activities = require("./activities.model.js")(mongoose);
+db.emotions = require("./emotions.model.js")(mongoose);
 module.exports = db;
