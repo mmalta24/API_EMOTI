@@ -16,9 +16,16 @@ exports.login = async (req, res) => {
       username: req.body.username,
     }).exec();
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found!",
+      });
+    }
+
     const check = bcrypt.compareSync(req.body.password, user.password);
 
-    if (user === null || !check) {
+    if (!check) {
       return res.status(401).json({
         success: false,
         error: "Username and password don't match!",
@@ -42,6 +49,7 @@ exports.login = async (req, res) => {
 
     return res.status(200).json({ success: true, authKey: token });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       error: "Some error occurred while loggin in!",
@@ -50,17 +58,23 @@ exports.login = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const encryptedPw = bcrypt.hashSync(req.body.password, 10);
   // create instance of User
   const user = new User({
     username: req.body.username,
-    password: encryptedPw,
+    password: req.body.password,
     name: req.body.name,
     email: req.body.email,
     typeUser: req.body.typeUser,
   });
 
+  if (user.typeUser === "Administrador") {
+    return res
+      .status(400)
+      .json({ success: false, error: "You can't register as an admin!" });
+  }
   try {
+    const encryptedPw = bcrypt.hashSync(user.password, 10);
+    user.password = encryptedPw;
     await user.save(); // save User in the database
     return res
       .status(201)
@@ -77,6 +91,12 @@ exports.create = async (req, res) => {
         errors.push(err.errors[key].message);
       });
       return res.status(400).json({ success: false, error: errors });
+    }
+    // missing password
+    else if (err.message === "Illegal arguments: undefined, string") {
+      return res
+        .status(400)
+        .json({ success: false, error: "Please provide a password!" });
     } else {
       return res.status(500).json({
         success: false,
@@ -95,14 +115,9 @@ exports.findOne = async (req, res) => {
   }
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select("username password email typeUser name imgProfile -_id")
+      .select("username email typeUser name imgProfile -_id")
       .exec(); // clean unnecessary object keys for profile
-    if (user === null) {
-      return res.status(404).json({
-        success: false,
-        error: `Username ${req.params.username} not found!`,
-      });
-    }
+
     return res.status(200).json({
       success: true,
       user,
@@ -116,113 +131,147 @@ exports.findOne = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-  const validationHasFields =
-    req.body.password ||
-    req.body.imgProfile ||
-    req.body.blocked === true ||
-    req.body.blocked === false;
-  const validationHasBothCases =
-    (req.body.password || req.body.imgProfile) &&
-    (req.body.blocked === true || req.body.blocked === false);
-  // if no valid fields to update OR has both cases (profile and admin block)
-  if (!validationHasFields || validationHasBothCases) {
-    return res.status(400).send({
-      success: false,
-      error: "Please provide provide password and/or imgProfile or blocked!",
-    });
-  }
-
   try {
-    let items =
-      req.body.blocked === true || req.body.blocked === false
-        ? { blocked: req.body.blocked }
-        : cleanEmptyObjectKeys({
-            password: req.body.password,
-            imgProfile: req.body.imgProfile,
-          });
-
-    // password and/or imgProfile case
-    if (items.password || items.imgProfile) {
-      const user = await User.findOneAndUpdate(
-        { username: req.params.username },
-        items,
-        {
-          returnOriginal: false, // to return the updated document
-          runValidators: true, //runs update validators on update command
-          useFindAndModify: false, //remove deprecation warning
-        }
-      ).exec();
-
-      if (user === null) {
-        return res.status(404).json({
-          success: false,
-          error: `Username ${req.params.username} not found!`,
-        });
-      }
-      return res.status(200).json({
-        success: true,
-        message: `User ${req.params.username} updated!`,
-        fieldsUpdated: {
-          password: Boolean(items.password),
-          imgProfile: Boolean(items.imgProfile),
-        },
+    if (
+      req.username !== req.params.username &&
+      req.typeUser !== "Administrador"
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: `You don't have permission to edit ${req.params.username}'s data!`,
       });
     }
-    // block user
-    else {
-      const user = await User.findOne({ username: req.params.username }).exec();
-      if (user === null) {
-        return res.status(404).json({
+
+    // admin update
+    if (req.typeUser === "Administrador") {
+      if (!req.body.hasOwnProperty("blocked")) {
+        return res.status(401).json({
           success: false,
-          error: `Username ${req.params.username} not found!`,
+          error: `As an admin, you only can update ${req.params.username} blocked status!`,
         });
-      } else if (user.typeUser === "Administrador") {
+      }
+
+      const blockStatus = req.body.blocked;
+      const user = await User.findOne({ username: req.params.username }).exec();
+
+      if (user.typeUser === "Administrador") {
         return res.status(403).json({
           success: false,
           error: `Username ${req.params.username} cannot be blocked!`,
         });
-      } else if (user.blocked === items.blocked) {
+      }
+
+      if (blockStatus === user.blocked) {
         return res.status(400).json({
           success: false,
-          error: items.blocked
+          error: blockStatus
             ? `Username ${req.params.username} is already blocked`
             : `Username ${req.params.username} is already unblocked`,
         });
       }
 
-      await User.updateOne({ username: req.params.username }, items, {
-        returnOriginal: false, // to return the updated document
-        runValidators: true, //runs update validators on update command
-        useFindAndModify: false, //remove deprecation warning
-      }).exec();
+      await User.findOneAndUpdate(
+        { username: req.params.username },
+        { blocked: blockStatus },
+        {
+          returnOriginal: false, // to return the updated document
+          runValidators: true, // update validators on update command
+          useFindAndModify: false, //remove deprecation warning
+        }
+      ).exec();
+
       return res.status(200).json({
         success: true,
         message: `User ${req.params.username} updated!`,
         fieldsUpdated: {
           blocked: true,
-          newValue: items.blocked,
+          newValue: blockStatus,
+        },
+      });
+    }
+
+    // updating own profile
+    if (req.username === req.params.username) {
+      // check if user is trying to change their own blocked status
+      if (req.body.hasOwnProperty("blocked")) {
+        return res.status(401).json({
+          success: false,
+          error: "You don't have permission to change your own blocked status!",
+        });
+      }
+
+      // check if user is updating nothing
+      if (!req.body.password && !req.body.imgProfile) {
+        return res.status(400).send({
+          success: false,
+          error: "Please provide provide password and/or imgProfile!",
+        });
+      }
+
+      // clean props with empty string / not on body if any
+      let items = cleanEmptyObjectKeys({
+        password: req.body.password,
+        imgProfile: req.body.imgProfile,
+      });
+
+      if (items.hasOwnProperty("password")) {
+        const encryptedPw = bcrypt.hashSync(items.password, 10);
+        items.password = encryptedPw;
+      }
+
+      // update user imgProfile and password
+      await User.findOneAndUpdate(
+        { username: req.params.username },
+
+        items,
+        {
+          returnOriginal: false, // to return the updated document
+          runValidators: true, // update validators on update command
+          useFindAndModify: false, //remove deprecation warning
+        }
+      ).exec();
+
+      return res.status(200).json({
+        success: true,
+        message: `User ${req.params.username} updated!`,
+        fieldsUpdated: {
+          password: items.hasOwnProperty("password"),
+          imgProfile: items.hasOwnProperty("imgProfile"),
         },
       });
     }
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: `Some error occurred while updating information of user ${req.params.username}!`,
-    });
+    if (err.name === "ValidationError") {
+      let errors = [];
+      Object.keys(err.errors).forEach((key) => {
+        errors.push(err.errors[key].message);
+      });
+      return res.status(400).json({ success: false, error: errors });
+    } else {
+      return res.status(500).json({
+        success: false,
+        error: err.message || "Some error occurred while updating the user.",
+      });
+    }
   }
 };
 
 exports.findAll = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
+
+  let filter = cleanEmptyObjectKeys({
+    username: req.query.username,
+    typeUser: req.query.typeUser,
+  });
+
   try {
-    let items = {
-      username: req.query.username,
-      typeUser: req.query.typeUser,
-    };
-
-    let newItems = cleanEmptyObjectKeys(items);
-
-    let users = await User.find(newItems).select(
-      "username password email typeUser name imgProfile blocked -_id"
+    let users = await User.find(filter).select(
+      "username email typeUser name imgProfile blocked -_id"
     );
 
     if (users.length === 0) {
@@ -239,17 +288,78 @@ exports.findAll = async (req, res) => {
   }
 };
 
-exports.delete = async (req, res) => {
+exports.createAdmin = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to create admins!",
+    });
+  }
+
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password,
+    name: req.body.name,
+    email: req.body.email,
+    typeUser: "Administrador",
+  });
+
   try {
-    const user = await User.findOneAndRemove({
-      username: req.params.username,
-    }).exec();
-    if (user === null) {
-      return res.status(404).json({
+    const encryptedPw = bcrypt.hashSync(user.password, 10);
+    user.password = encryptedPw;
+    await user.save(); // save User in the database
+
+    return res
+      .status(200)
+      .json({ success: true, message: `Admin ${user.username} created!` });
+  } catch (err) {
+    if (err.name === "MongoServerError" && err.code === 11000) {
+      return res.status(422).json({
         success: false,
-        error: `Username ${req.params.username} not found!`,
+        error: `The username ${req.body.username} or email ${req.body.email} are already in use!`,
+      });
+    } else if (err.name === "ValidationError") {
+      let errors = [];
+      Object.keys(err.errors).forEach((key) => {
+        errors.push(err.errors[key].message);
+      });
+      return res.status(400).json({ success: false, error: errors });
+    }
+    // missing password
+    else if (err.message === "Illegal arguments: undefined, string") {
+      return res
+        .status(400)
+        .json({ success: false, error: "Please provide a password!" });
+    } else {
+      return res.status(500).json({
+        success: false,
+        error: `Some error occurred while deleting user ${req.params.username}!`,
       });
     }
+  }
+};
+
+exports.delete = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to delete users!",
+    });
+  }
+
+  try {
+    const user = await User.findOne({
+      username: req.params.username,
+    }).exec();
+
+    if (user.typeUser === "Administrador") {
+      return res.status(400).json({
+        success: false,
+        message: `Admin ${user.username} can't be deleted!`,
+      });
+    }
+
+    await User.findOneAndRemove({ username: req.params.username }).exec();
 
     return res
       .status(200)
@@ -262,7 +372,14 @@ exports.delete = async (req, res) => {
   }
 };
 
+/*
 exports.createRelation = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
   if (!req.body.usernameChild) {
     return res
       .status(400)
@@ -335,17 +452,42 @@ exports.createRelation = async (req, res) => {
 };
 
 exports.removeRelation = (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
   return res.status(200).json({ success: true, message: "OK" });
 };
 
 exports.findRelations = (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
   return res.status(200).json({ success: true, message: "OK" });
 };
 
 exports.addHistory = (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
   return res.status(200).json({ success: true, message: "OK" });
 };
 
 exports.getHistory = (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all application users!",
+    });
+  }
   return res.status(200).json({ success: true, message: "OK" });
 };
+*/

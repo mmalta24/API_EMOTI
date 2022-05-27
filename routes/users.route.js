@@ -13,21 +13,27 @@ router
 router.route("/login").post(usersController.login);
 
 router
-  .route("/:username")
-  .get(authController.verifyToken, usersController.findOne)
-  .patch(usersController.update)
-  .delete(usersController.delete);
+  .route("/addAdmin")
+  .post(authController.verifyToken, usersController.createAdmin);
 
 router
+  .route("/:username")
+  .get(authController.verifyToken, usersController.findOne)
+  .patch(authController.verifyToken, usersController.update)
+  .delete(authController.verifyToken, usersController.delete);
+
+/*
+router
   .route("/:username/children")
-  .get(usersController.findRelations)
-  .put(usersController.createRelation)
-  .delete(usersController.removeRelation);
+  .get(authController.verifyToken, usersController.findRelations)
+  .put(authController.verifyToken, usersController.createRelation)
+  .delete(authController.verifyToken, usersController.removeRelation);
 
 router
   .route("/:username/history")
-  .get(usersController.getHistory)
-  .post(usersController.addHistory);
+  .get(authController.verifyToken, usersController.getHistory)
+  .post(authController.verifyToken, usersController.addHistory);
+   */
 
 router.all("*", function (req, res) {
   return res.status(404).json({ message: "USERS: what???" });

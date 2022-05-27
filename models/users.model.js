@@ -7,15 +7,14 @@ module.exports = (mongoose) => {
         unique: true,
         validate: {
           validator: function (v) {
-            return /^[a-zA-Z\_]+$/.test(v); // valid only a-z, A-Z and _ characters
+            return /^[a-zA-Z0-9\_]+$/.test(v); // valid only a-z, A-Z, 0-9 and _ characters
           },
           message: (props) => `${props.value} is not a valid username!`,
         },
       },
       password: {
         type: String,
-        required: [true, "Please provide a password!"],
-        default: "Esmad_2122",
+        required: true,
       },
       email: {
         type: String,
@@ -23,8 +22,8 @@ module.exports = (mongoose) => {
         unique: true,
         validate: {
           validator: function (v) {
-            return /^[\a-zA-Z\_\.]+@([\a-z]+\.)+[\a-z]{2,4}$/.test(v);
-            // a-z, A-Z, _ or . characters @ a-z characters . a-z characters (2-4)
+            return /^[\a-zA-Z0-9\_\.]+@([\a-z]+\.)+[\a-z]{2,4}$/.test(v);
+            // a-z, A-Z, 0-9, _ or . characters @ a-z characters . a-z characters (2-4)
           },
           message: (props) => `${props.value} is not a valid email!`,
         },
@@ -39,7 +38,7 @@ module.exports = (mongoose) => {
         },
       },
       name: { type: String, required: [true, "Please provide a name!"] },
-      imgProfile: { type: String },
+      imgProfile: { type: String, default: "" },
       blocked: { type: Boolean, default: false },
       badgesId: { type: Array },
       questionsDone: { type: Array },
