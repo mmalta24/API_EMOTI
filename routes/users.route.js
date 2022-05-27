@@ -22,13 +22,13 @@ router
   .patch(authController.verifyToken, usersController.update)
   .delete(authController.verifyToken, usersController.delete);
 
-/*
 router
   .route("/:username/children")
   .get(authController.verifyToken, usersController.findRelations)
   .put(authController.verifyToken, usersController.createRelation)
   .delete(authController.verifyToken, usersController.removeRelation);
 
+/*
 router
   .route("/:username/history")
   .get(authController.verifyToken, usersController.getHistory)

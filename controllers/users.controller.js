@@ -47,7 +47,9 @@ exports.login = async (req, res) => {
       }
     );
 
-    return res.status(200).json({ success: true, authKey: token });
+    return res
+      .status(200)
+      .json({ success: true, authKey: token, typeUser: user.typeUser });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -372,69 +374,101 @@ exports.delete = async (req, res) => {
   }
 };
 
-/*
-exports.createRelation = async (req, res) => {
-  if (req.typeUser !== "Administrador") {
+exports.findRelations = async (req, res) => {
+  // user validation
+  if (req.typeUser !== "Tutor") {
     return res.status(403).json({
       success: false,
-      error: "You don't have permission to see all application users!",
+      error: "You don't have permission to see your relations!",
+    });
+  } else if (req.username !== req.params.username) {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see that user's relations!",
     });
   }
-  if (!req.body.usernameChild) {
+
+  try {
+    let tutor = await User.findOne({
+      username: req.params.username,
+    }).select("children -_id");
+
+    return res.status(200).json({ success: true, children: tutor.children });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: `Some error occurred while associating to child ${req.body.usernameChild}!`,
+    });
+  }
+};
+
+exports.createRelation = async (req, res) => {
+  // data validation
+  if (req.typeUser !== "Tutor") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to create a relation!",
+    });
+  } else if (req.username !== req.params.username) {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to create a relation on that user!",
+    });
+  } else if (!req.body.usernameChild) {
     return res
       .status(400)
       .json({ success: false, error: "Please provide usernameChild!" });
   }
+
   try {
-    const tutorUser = await User.findOne({
-      username: req.params.username,
-      typeUser: "Tutor",
-    }).exec();
+    // finding child
     const childUser = await User.findOne({
       username: req.body.usernameChild,
-      typeUser: "Criança",
     }).exec();
-
-    if (tutorUser === null || childUser === null) {
+    if (!childUser) {
       return res.status(404).json({
         success: false,
-        error:
-          tutorUser === null
-            ? `Tutor ${req.params.username} not found!`
-            : `Child ${req.body.usernameChild} not found!`,
+        error: `Child ${req.body.usernameChild} not found!`,
+      });
+    } else if (childUser.typeUser !== "Criança") {
+      return res.status(400).json({
+        success: false,
+        error: `User ${req.body.usernameChild} is not a child!`,
       });
     }
-
+    // validate relations
+    const tutorUser = await User.findOne({
+      username: req.params.username,
+    }).exec();
     if (tutorUser.children.includes(req.body.usernameChild)) {
       return res.status(400).json({
         success: false,
         error: `Already related to ${req.body.usernameChild}!`,
       });
-    }
-    if (childUser.tutor) {
+    } else if (childUser.tutor) {
       return res.status(400).json({
         success: false,
         error: `Child ${req.body.usernameChild} already has a tutor!`,
       });
     }
-    // update tutor
+
+    // update tutor and child
     await User.findOneAndUpdate(
       { username: req.params.username },
       { $push: { children: req.body.usernameChild } },
       {
         returnOriginal: false, // to return the updated document
-        runValidators: true, //runs update validators on update command
+        runValidators: false, //runs update validators on update command
         useFindAndModify: false, //remove deprecation warning
       }
     ).exec();
 
-    // update child
     await User.findOneAndUpdate(
       { username: req.body.usernameChild },
       { tutor: req.params.username },
       {
         returnOriginal: false, // to return the updated document
-        runValidators: true, //runs update validators on update command
+        runValidators: false, //runs update validators on update command
         useFindAndModify: false, //remove deprecation warning
       }
     ).exec();
@@ -452,24 +486,34 @@ exports.createRelation = async (req, res) => {
 };
 
 exports.removeRelation = (req, res) => {
-  if (req.typeUser !== "Administrador") {
+  // data validation
+  if (req.typeUser !== "Tutor") {
     return res.status(403).json({
       success: false,
-      error: "You don't have permission to see all application users!",
+      error: "You don't have permission to undo a relation!",
+    });
+  } else if (req.username !== req.params.username) {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to undo a relation on that user!",
+    });
+  } else if (!req.body.usernameChild) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Please provide usernameChild!" });
+  }
+
+  try {
+    return res.status(200).json({ success: true, message: "OK" });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: `Some error occurred while disassociating to child ${req.body.usernameChild}!`,
     });
   }
-  return res.status(200).json({ success: true, message: "OK" });
 };
 
-exports.findRelations = (req, res) => {
-  if (req.typeUser !== "Administrador") {
-    return res.status(403).json({
-      success: false,
-      error: "You don't have permission to see all application users!",
-    });
-  }
-  return res.status(200).json({ success: true, message: "OK" });
-};
+/*
 
 exports.addHistory = (req, res) => {
   if (req.typeUser !== "Administrador") {
