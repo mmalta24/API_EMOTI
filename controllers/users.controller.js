@@ -49,7 +49,12 @@ exports.login = async (req, res) => {
 
     return res
       .status(200)
-      .json({ success: true, authKey: token, typeUser: user.typeUser });
+      .json({
+        success: true,
+        authKey: token,
+        typeUser: user.typeUser,
+        username: user.username,
+      });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -485,7 +490,7 @@ exports.createRelation = async (req, res) => {
   }
 };
 
-exports.removeRelation = (req, res) => {
+exports.removeRelation = async (req, res) => {
   // data validation
   if (req.typeUser !== "Tutor") {
     return res.status(403).json({
@@ -504,7 +509,42 @@ exports.removeRelation = (req, res) => {
   }
 
   try {
-    return res.status(200).json({ success: true, message: "OK" });
+    const tutorUser = await User.findOne({
+      username: req.params.username,
+    }).exec();
+
+    if (!tutorUser.children.includes(req.body.usernameChild)) {
+      return res.status(404).json({
+        success: false,
+        error: `Child ${req.body.usernameChild} not found on your relations!`,
+      });
+    }
+
+    // update tutor and child
+    await User.findOneAndUpdate(
+      { username: req.params.username },
+      { $pull: { children: req.body.usernameChild } },
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: false, //runs update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    ).exec();
+
+    await User.findOneAndUpdate(
+      { username: req.body.usernameChild },
+      { tutor: "" },
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: false, //runs update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    ).exec();
+
+    return res.status(200).json({
+      success: true,
+      message: `Relation between ${req.params.username} and ${req.body.usernameChild} undone!`,
+    });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -513,25 +553,10 @@ exports.removeRelation = (req, res) => {
   }
 };
 
-/*
-
 exports.addHistory = (req, res) => {
-  if (req.typeUser !== "Administrador") {
-    return res.status(403).json({
-      success: false,
-      error: "You don't have permission to see all application users!",
-    });
-  }
   return res.status(200).json({ success: true, message: "OK" });
 };
 
 exports.getHistory = (req, res) => {
-  if (req.typeUser !== "Administrador") {
-    return res.status(403).json({
-      success: false,
-      error: "You don't have permission to see all application users!",
-    });
-  }
   return res.status(200).json({ success: true, message: "OK" });
 };
-*/

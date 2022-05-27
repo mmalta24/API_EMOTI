@@ -28,12 +28,10 @@ router
   .put(authController.verifyToken, usersController.createRelation)
   .delete(authController.verifyToken, usersController.removeRelation);
 
-/*
 router
   .route("/:username/history")
   .get(authController.verifyToken, usersController.getHistory)
   .post(authController.verifyToken, usersController.addHistory);
-   */
 
 router.all("*", function (req, res) {
   return res.status(404).json({ message: "USERS: what???" });
