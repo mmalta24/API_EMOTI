@@ -17,6 +17,7 @@ db.mongoose
   });
 
 db.users = require("./users.model.js")(mongoose);
+db.classes = require("./classes.model.js")(mongoose);
 db.badges = require("./badges.model.js")(mongoose);
 db.activities = require("./activities.model.js")(mongoose);
 db.emotions = require("./emotions.model.js")(mongoose);

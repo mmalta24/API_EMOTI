@@ -1,33 +1,39 @@
 const express = require("express");
 
 const classesController = require("../controllers/classes.controller");
+const authController = require("../controllers/auth.controller");
 
 // express router
 let router = express.Router();
 
 router
   .route("/")
-  .get(classesController.findAll)
-  .post(classesController.createClass);
+  .get(authController.verifyToken, classesController.findAll)
+  .post(authController.verifyToken, classesController.createClass);
 
-router.route("/requests").post(classesController.createRequest);
+router
+  .route("/requests")
+  .get(authController.verifyToken, classesController.findChild)
+  .post(authController.verifyToken, classesController.createRequest);
 
 router
   .route("/requests/:usernameChild")
-  .get(classesController.findRequest)
-  .put(classesController.acceptRequest)
-  .delete(classesController.removeRequest);
+  .get(authController.verifyToken, classesController.findRequest)
+  .put(authController.verifyToken, classesController.acceptRequest)
+  .delete(authController.verifyToken, classesController.removeRequest);
 
 router
-  .route("/children")
-  .get(classesController.findAllStudents)
-  .delete(classesController.removeStudent);
+  .route("/:className")
+  .delete(authController.verifyToken, classesController.removeClass);
 
-router.route("/:className").delete(classesController.removeClass);
+router
+  .route("/:className/children")
+  .get(authController.verifyToken, classesController.findAllStudents)
+  .delete(authController.verifyToken, classesController.removeStudent);
 
 router
   .route("/:className/children/:usernameChild")
-  .put(classesController.alterStudentClass);
+  .put(authController.verifyToken, classesController.alterStudentClass);
 
 router.all("*", function (req, res) {
   res.status(404).json({ message: "CLASSES: what???" });

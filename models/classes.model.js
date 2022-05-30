@@ -1,8 +1,8 @@
 module.exports = (mongoose) => {
   const schema = mongoose.Schema(
     {
-      name: { type: String, required: [true, "Please provide a name!"] },
-      teacher: { type: String, required: [true, "Please provide a teacher!"] },
+      name: { type: String, required: [true, "Please provide a className!"] },
+      teacher: { type: String, required: true },
       requests: { type: Array },
       students: { type: Array },
     },

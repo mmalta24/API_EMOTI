@@ -47,14 +47,12 @@ exports.login = async (req, res) => {
       }
     );
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        authKey: token,
-        typeUser: user.typeUser,
-        username: user.username,
-      });
+    return res.status(200).json({
+      success: true,
+      authKey: token,
+      typeUser: user.typeUser,
+      username: user.username,
+    });
   } catch (err) {
     console.log(err);
     return res.status(500).json({
@@ -83,9 +81,11 @@ exports.create = async (req, res) => {
     const encryptedPw = bcrypt.hashSync(user.password, 10);
     user.password = encryptedPw;
     await user.save(); // save User in the database
-    return res
-      .status(201)
-      .json({ success: true, uri: `api/users/${user.username}` });
+    return res.status(201).json({
+      success: true,
+      message: `User ${user.username} created!`,
+      uri: `api/users/${user.username}`,
+    });
   } catch (err) {
     if (err.name === "MongoServerError" && err.code === 11000) {
       return res.status(422).json({
@@ -359,6 +359,13 @@ exports.delete = async (req, res) => {
       username: req.params.username,
     }).exec();
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User ${req.params.username} not found!`,
+      });
+    }
+
     if (user.typeUser === "Administrador") {
       return res.status(400).json({
         success: false,
@@ -372,6 +379,7 @@ exports.delete = async (req, res) => {
       .status(200)
       .json({ success: true, message: `User ${user.username} deleted!` });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       error: `Some error occurred while deleting user ${req.params.username}!`,
@@ -419,10 +427,12 @@ exports.createRelation = async (req, res) => {
       success: false,
       error: "You don't have permission to create a relation on that user!",
     });
-  } else if (!req.body.usernameChild) {
-    return res
-      .status(400)
-      .json({ success: false, error: "Please provide usernameChild!" });
+  }
+  if (!req.body.usernameChild || !req.body.password) {
+    return res.status(400).json({
+      success: false,
+      error: "Please provide usernameChild and password!",
+    });
   }
 
   try {
@@ -454,6 +464,14 @@ exports.createRelation = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: `Child ${req.body.usernameChild} already has a tutor!`,
+      });
+    }
+    // validate child password
+    const check = bcrypt.compareSync(req.body.password, childUser.password);
+    if (!check) {
+      return res.status(400).json({
+        success: false,
+        error: `Child password is wrong!`,
       });
     }
 
