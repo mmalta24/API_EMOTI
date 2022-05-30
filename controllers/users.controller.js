@@ -150,7 +150,10 @@ exports.update = async (req, res) => {
     }
 
     // admin update
-    if (req.typeUser === "Administrador") {
+    if (
+      req.typeUser === "Administrador" &&
+      req.params.username !== req.username
+    ) {
       if (!req.body.hasOwnProperty("blocked")) {
         return res.status(401).json({
           success: false,
