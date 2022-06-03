@@ -444,7 +444,7 @@ exports.findAllStudents = async (req, res) => {
   }
 };
 
-exports.removeStudent = (req, res) => {
+exports.removeStudent = async (req, res) => {
   if (req.typeUser !== "Professor") {
     return res.status(403).json({
       success: false,
@@ -452,7 +452,6 @@ exports.removeStudent = (req, res) => {
     });
   }
   try {
-    /*
     // check if class exists
     const classTeacher = await Class.findOne({
       name: req.params.className,
@@ -464,9 +463,8 @@ exports.removeStudent = (req, res) => {
         error: `Class ${req.params.className} not found on your classes!`,
       });
     }
-
     // check if student exists on that class
-    if(!classTeacher.students.includes(req.params.usernameChild)) {
+    if (!classTeacher.students.includes(req.params.usernameChild)) {
       return res.status(404).json({
         success: false,
         error: `Class ${req.params.className} doesn't have child ${req.params.usernameChild}!`,
@@ -488,7 +486,7 @@ exports.removeStudent = (req, res) => {
         useFindAndModify: false, //remove deprecation warning
       }
     ).exec();
-     */
+
     return res.status(200).json({
       success: true,
       message: `Child ${req.params.usernameChild} removed from class ${req.params.className}`,
@@ -501,21 +499,20 @@ exports.removeStudent = (req, res) => {
   }
 };
 
-exports.alterStudentClass = (req, res) => {
+exports.alterStudentClass = async (req, res) => {
   if (req.typeUser !== "Professor") {
     return res.status(403).json({
       success: false,
       error: "You don't have permission to edit students' class!",
     });
   }
+  if (!req.body.newClass) {
+    return res.status(404).json({
+      success: false,
+      error: "Please provide newClass!",
+    });
+  }
   try {
-    /*
-    if (!req.body.newClass) {
-      return res.status(404).json({
-        success: false,
-        error: "Please provide newClass!",
-      });
-    }
     // check if classes exist
     const classTeacher = await Class.findOne({
       name: req.params.className,
@@ -530,23 +527,21 @@ exports.alterStudentClass = (req, res) => {
         success: false,
         error: `Class ${req.params.className} not found on your classes!`,
       });
-    }
-    else if (!newClass) {
+    } else if (!newClass) {
       return res.status(404).json({
         success: false,
         error: `Class ${req.body.newClass} not found on your classes!`,
       });
     }
-
     // check if student exists on that class
-    if(!classTeacher.students.includes(req.params.usernameChild)) {
+    if (!classTeacher.students.includes(req.params.usernameChild)) {
       return res.status(404).json({
         success: false,
         error: `Class ${req.params.className} doesn't have child ${req.params.usernameChild}!`,
       });
     }
 
-    // update class
+    // update classes
     await Class.findOneAndUpdate(
       {
         name: req.params.className,
@@ -577,8 +572,6 @@ exports.alterStudentClass = (req, res) => {
       }
     ).exec();
 
-    
-     */
     return res.status(200).json({
       success: true,
       message: `Child ${req.params.usernameChild} is now on class ${req.body.newClass}`,

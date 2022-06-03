@@ -28,12 +28,12 @@ router
 
 router
   .route("/:className/children")
-  .get(authController.verifyToken, classesController.findAllStudents)
-  .delete(authController.verifyToken, classesController.removeStudent);
+  .get(authController.verifyToken, classesController.findAllStudents);
 
 router
   .route("/:className/children/:usernameChild")
-  .put(authController.verifyToken, classesController.alterStudentClass);
+  .put(authController.verifyToken, classesController.alterStudentClass)
+  .delete(authController.verifyToken, classesController.removeStudent);
 
 router.all("*", function (req, res) {
   res.status(404).json({ message: "CLASSES: what???" });
