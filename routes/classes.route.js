@@ -23,6 +23,10 @@ router
   .delete(authController.verifyToken, classesController.removeRequest);
 
 router
+  .route("/children/:usernameChild")
+  .get(authController.verifyToken, classesController.getClassFromChild);
+
+router
   .route("/:className")
   .delete(authController.verifyToken, classesController.removeClass);
 

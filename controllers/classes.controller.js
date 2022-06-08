@@ -377,6 +377,31 @@ exports.removeRequest = async (req, res) => {
   }
 };
 
+exports.getClassFromChild = async (req, res) => {
+  if (req.typeUser !== "Tutor") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to get child's class!",
+    });
+  }
+
+  const user = await User.findOne({ username: req.username }).exec();
+  if (!user.children.includes(req.params.usernameChild)) {
+    return res.status(404).json({
+      success: false,
+      error: `Child ${req.params.usernameChild} not found on your relations!`,
+    });
+  }
+
+  const classItem = await Class.findOne({
+    students: req.params.usernameChild,
+  })
+    .select("name teacher -_id")
+    .exec();
+
+  return res.status(200).json({ success: true, class: classItem });
+};
+
 exports.removeClass = async (req, res) => {
   if (req.typeUser !== "Professor") {
     return res.status(403).json({
@@ -445,7 +470,7 @@ exports.findAllStudents = async (req, res) => {
 };
 
 exports.removeStudent = async (req, res) => {
-  if (req.typeUser !== "Professor") {
+  if (req.typeUser !== "Professor" && req.typeUser !== "Tutor") {
     return res.status(403).json({
       success: false,
       error: "You don't have permission to remove students from a class!",
