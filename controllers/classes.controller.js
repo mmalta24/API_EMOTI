@@ -10,9 +10,9 @@ exports.findAll = async (req, res) => {
     });
   }
 
-  const classes = await Class.find({ teacher: req.username }).select(
-    "-_id -teacher"
-  );
+  const classes = await Class.find({ teacher: req.username })
+    .select("-_id -teacher")
+    .exec();
   return res.status(200).json({ success: true, classes });
 };
 
