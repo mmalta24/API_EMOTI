@@ -77,6 +77,11 @@ exports.create = async (req, res) => {
       .status(400)
       .json({ success: false, error: "You can't register as an admin!" });
   }
+  if (!user.password) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Please provide a password!" });
+  }
   try {
     const encryptedPw = bcrypt.hashSync(user.password, 10);
     user.password = encryptedPw;
@@ -98,12 +103,6 @@ exports.create = async (req, res) => {
         errors.push(err.errors[key].message);
       });
       return res.status(400).json({ success: false, error: errors });
-    }
-    // missing password
-    else if (err.message === "Illegal arguments: undefined, string") {
-      return res
-        .status(400)
-        .json({ success: false, error: "Please provide a password!" });
     } else {
       return res.status(500).json({
         success: false,
@@ -175,8 +174,8 @@ exports.update = async (req, res) => {
         return res.status(400).json({
           success: false,
           error: blockStatus
-            ? `Username ${req.params.username} is already blocked`
-            : `Username ${req.params.username} is already unblocked`,
+            ? `User ${req.params.username} is already blocked!`
+            : `User ${req.params.username} is already unblocked!`,
         });
       }
 
@@ -378,6 +377,10 @@ exports.delete = async (req, res) => {
 
     await User.findOneAndRemove({ username: req.params.username }).exec();
 
+    // teacher delete - delete classes + activities personalized
+    // tutor delete - delete child relations + activities personalized
+    // child delete - delete tutor relation
+
     return res
       .status(200)
       .json({ success: true, message: `User ${user.username} deleted!` });
@@ -409,7 +412,9 @@ exports.findRelations = async (req, res) => {
       username: req.params.username,
     }).select("children -_id");
 
-    return res.status(200).json({ success: true, children: tutor.children });
+    let childrenInfo = await User.find({ username: { $in: tutor.children } });
+
+    return res.status(200).json({ success: true, children: childrenInfo });
   } catch (err) {
     return res.status(500).json({
       success: false,
