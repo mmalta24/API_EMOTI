@@ -480,7 +480,7 @@ exports.removeStudent = async (req, res) => {
     // check if class exists
     const classTeacher = await Class.findOne({
       name: req.params.className,
-      teacher: req.username,
+      teacher: req.typeUser === "Professor" ? req.username : req.body.teacher,
     }).exec();
     if (!classTeacher) {
       return res.status(404).json({
