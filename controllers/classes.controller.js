@@ -503,7 +503,7 @@ exports.removeStudent = async (req, res) => {
     await Class.findOneAndUpdate(
       {
         name: req.params.className,
-        teacher: req.username,
+        teacher: req.typeUser === "Professor" ? req.username : req.body.teacher,
       },
       {
         $pull: { students: req.params.usernameChild },
