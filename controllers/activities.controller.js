@@ -1,26 +1,51 @@
 const { cleanEmptyObjectKeys } = require("../helpers/index");
 const db = require("../models/index");
-const Activities = db.activities;
+const Activity = db.activities;
+const Emotion = db.emotions;
 
-// Create and Save a new ACTIVITY: use object.save()
-
+// not finished - possible add to tutor/teacher
 exports.create = async (req, res) => {
-  const activity = new Activities({
-    // create an instance of a ACTIVITY model
+  if (req.typeUser === "Criança") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to create activities!",
+    });
+  }
+
+  const activity = new Activity({
     title: req.body.title,
     level: req.body.level,
     questions: req.body.questions,
     caseIMG: req.body.caseIMG,
     description: req.body.description,
     category: req.body.category,
-    author: req.body.author,
+    author: req.username,
   });
   try {
-    // if save is successful, the returned promise will fulfill with the document saved
+    for (const question of activity.questions) {
+      const emotion = await Emotion.findOne({
+        name: question.correctAnswer,
+      }).exec();
+      if (!emotion) {
+        return res.status(404).json({
+          success: false,
+          error: `Cannot find any emotion with name ${question.correctAnswer}!`,
+        });
+      }
+    }
+
+    const emotions = await Emotion.find().select("name -_id").exec();
+    let list = emotions.map((e) => e.name);
+    // add emotions on question answers
+    activity.questions = activity.questions.map((question) => ({
+      ...question,
+      answers: list,
+    }));
+
     await activity.save(); // save document in the activities DB collection
     return res.status(201).json({
       success: true,
-      message: "New activity was created.",
+      message: "New activity was created!",
       URL: `/activities/${activity.title}`,
     });
   } catch (err) {
@@ -35,7 +60,7 @@ exports.create = async (req, res) => {
       Object.keys(err.errors).forEach((key) => {
         errors.push(err.errors[key].message);
       });
-      return res.status(400).json({ success: false, message: errors });
+      return res.status(400).json({ success: false, error: errors });
     }
     return res.status(500).json({
       success: false,
@@ -44,6 +69,7 @@ exports.create = async (req, res) => {
   }
 };
 
+/*
 exports.findAll = async (req, res) => {
   let queries = {
     level: req.query.level,
@@ -92,3 +118,4 @@ exports.delete = async (req, res) => {
     });
   }
 };
+*/

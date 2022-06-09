@@ -1,16 +1,23 @@
 const express = require("express");
 
 const activitiesController = require("../controllers/activities.controller");
+const authController = require("../controllers/auth.controller");
 
 // express router
 let router = express.Router();
 
+/*
+router.route("/").post(authController.verifyToken, activitiesController.create);
+
 router
   .route("/")
-  .get(activitiesController.findAll)
-  .post(activitiesController.create);
+  .get(authController.verifyToken, activitiesController.findAll)
+  .post(authController.verifyToken, activitiesController.create);
 
-router.route("/:activityName").delete(activitiesController.delete);
+router
+  .route("/:activityName")
+  .delete(authController.verifyToken, activitiesController.delete);
+   */
 
 router.all("*", function (req, res) {
   //send an predefined error message

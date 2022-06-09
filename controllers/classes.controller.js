@@ -393,7 +393,7 @@ exports.getClassFromChild = async (req, res) => {
     });
   }
 
-  const classItem = await Class.findOne({
+  const classItem = await Class.find({
     students: req.params.usernameChild,
   })
     .select("name teacher -_id")
@@ -458,9 +458,12 @@ exports.findAllStudents = async (req, res) => {
         error: `Class ${req.params.className} not found on your classes!`,
       });
     }
-    return res
-      .status(200)
-      .json({ success: true, students: classTeacher.students });
+    const students = await User.find({
+      username: { $in: classTeacher.students },
+    })
+      .select("username name tutor -_id")
+      .exec();
+    return res.status(200).json({ success: true, students });
   } catch (err) {
     return res.status(500).json({
       success: false,
