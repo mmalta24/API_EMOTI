@@ -6,14 +6,11 @@ const authController = require("../controllers/auth.controller");
 // express router
 let router = express.Router();
 
-/*
-router.route("/").post(authController.verifyToken, activitiesController.create);
-
 router
   .route("/")
   .get(authController.verifyToken, activitiesController.findAll)
   .post(authController.verifyToken, activitiesController.create);
-
+/*
 router
   .route("/:activityName")
   .delete(authController.verifyToken, activitiesController.delete);

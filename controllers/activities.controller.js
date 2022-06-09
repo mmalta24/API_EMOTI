@@ -1,5 +1,6 @@
 const { cleanEmptyObjectKeys } = require("../helpers/index");
 const db = require("../models/index");
+const User = db.users;
 const Activity = db.activities;
 const Emotion = db.emotions;
 
@@ -33,7 +34,6 @@ exports.create = async (req, res) => {
         });
       }
     }
-
     const emotions = await Emotion.find().select("name -_id").exec();
     let list = emotions.map((e) => e.name);
     // add emotions on question answers
@@ -41,8 +41,19 @@ exports.create = async (req, res) => {
       ...question,
       answers: list,
     }));
-
     await activity.save(); // save document in the activities DB collection
+    // add to tutor/teacher
+    if (req.typeUser !== "Admin") {
+      await User.findOneAndUpdate(
+        { username: req.username },
+        { $push: { activitiesPersonalized: activity.title } },
+        {
+          returnOriginal: false, // to return the updated document
+          runValidators: false, //runs update validators on update command
+          useFindAndModify: false, //remove deprecation warning
+        }
+      ).exec();
+    }
     return res.status(201).json({
       success: true,
       message: "New activity was created!",
@@ -69,34 +80,54 @@ exports.create = async (req, res) => {
   }
 };
 
-/*
 exports.findAll = async (req, res) => {
   let queries = {
     level: req.query.level,
     category: req.query.category,
-    author: req.query.author,
   };
-
   queries = cleanEmptyObjectKeys(queries);
 
   try {
-    // find function parameters: filter, projection (select) / returns a list of documents
-    let data = await Activities.find(queries).select("-_id").exec(); // execute the query
-    if (data.length == 0) {
-      res
-        .status(404)
-        .json({ success: false, error: "Cannot find any activity!" });
-    } else {
-      res.status(200).json({ success: true, data });
+    let all = await Activity.find(queries).select("-_id").exec();
+    // get public/admin activities
+    let admins = await User.find({ typeUser: "Administrador" })
+      .select("username -_id")
+      .exec();
+    admins = admins.map((a) => a.username);
+    let public = all.filter((a) => admins.includes(a.author));
+    if (req.typeUser === "Administrador") {
+      return res.status(200).json({ success: true, activities: public });
     }
+
+    // get tutor/teacher activities
+    if (req.typeUser === "Tutor" || req.typeUser === "Professor") {
+      let personalized = all.filter((a) => a.author === req.username);
+      return res
+        .status(200)
+        .json({ success: true, activities: [...public, ...personalized] });
+    }
+
+    // get child activities
+    queries.author = req.query.author;
+    let child = await User.findOne({ username: req.username }).exec();
+    let personalized = all.filter(
+      (a) =>
+        child.activitiesSuggested.includes(a.title) &&
+        a.author === queries.author
+    );
+    return res.status(200).json({
+      success: true,
+      activities: queries.author ? personalized : [...public, ...personalized],
+    });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: err.message || "Some error occurred while retrieving activities.",
     });
   }
 };
 
+/*
 // Delete a ACTIVITY (given its title)
 exports.delete = async (req, res) => {
   try {

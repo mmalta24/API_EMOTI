@@ -446,25 +446,29 @@ exports.findAllStudents = async (req, res) => {
       error: "You don't have permission to get students from a class!",
     });
   }
+  console.log("yay");
   try {
     // check if class exists
-    const classTeacher = await Class.findOne({
-      name: req.params.className,
+    const classes = await Class.find({
       teacher: req.username,
-    }).exec();
-    if (!classTeacher) {
-      return res.status(404).json({
-        success: false,
-        error: `Class ${req.params.className} not found on your classes!`,
-      });
-    }
-    const students = await User.find({
-      username: { $in: classTeacher.students },
+      students: { $exists: true, $ne: [] }, // students list is not empty
+    })
+      .select("name students -_id")
+      .exec();
+
+    let studentsList = classes.map((c) => c.students[0]);
+
+    const children = await User.find({
+      username: { $in: studentsList },
     })
       .select("username name tutor -_id")
       .exec();
-    return res.status(200).json({ success: true, students });
+
+    console.log("children", children);
+    const list = classes.map((c) => ({ name: c.name, students: children }));
+    return res.status(200).json({ success: true, list });
   } catch (err) {
+    console.log(err);
     return res.status(500).json({
       success: false,
       error: `Some error occurred while retrieving class students!`,
