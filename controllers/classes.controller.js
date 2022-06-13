@@ -466,7 +466,6 @@ exports.findAllStudents = async (req, res) => {
     const list = classes.map((c) => ({ name: c.name, students: children }));
     return res.status(200).json({ success: true, list });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
       success: false,
       error: `Some error occurred while retrieving class students!`,

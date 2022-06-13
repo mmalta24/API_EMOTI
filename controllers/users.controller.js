@@ -54,7 +54,6 @@ exports.login = async (req, res) => {
       username: user.username,
     });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
       success: false,
       error: "Some error occurred while loggin in!",
@@ -385,7 +384,6 @@ exports.delete = async (req, res) => {
       .status(200)
       .json({ success: true, message: `User ${user.username} deleted!` });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
       success: false,
       error: `Some error occurred while deleting user ${req.params.username}!`,
