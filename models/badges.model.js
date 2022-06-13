@@ -10,6 +10,7 @@ module.exports = (mongoose) => {
       pointsNeeded: {
         type: Number,
         required: [true, "Please provide pointsNeeded!"],
+        min: [0, "pointsNeeded should be a positive number!"],
       },
       badgeEmotion: {
         type: String,

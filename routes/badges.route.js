@@ -16,7 +16,6 @@ router
   .delete(authController.verifyToken, badgesController.delete);
 
 router.all("*", function (req, res) {
-  //send an predefined error message
   res.status(404).json({ message: "BADGES: what???" });
 });
 

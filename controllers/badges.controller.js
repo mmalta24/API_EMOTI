@@ -1,5 +1,7 @@
+const { cleanEmptyObjectKeys } = require("../helpers");
 const db = require("../models");
-const Badges = db.badges;
+const Badge = db.badges;
+const Emotion = db.emotions;
 
 exports.create = async (req, res) => {
   if (req.typeUser !== "Administrador") {
@@ -9,18 +11,24 @@ exports.create = async (req, res) => {
     });
   }
 
-  const badge = new Badges({
+  const badge = new Badge({
     badgeName: req.body.badgeName,
     badgeIMG: req.body.badgeIMG,
     pointsNeeded: req.body.pointsNeeded,
     badgeEmotion: req.body.badgeEmotion,
   });
   try {
-    // if save is successful, the returned promise will fulfill with the document saved
+    const emotion = await Emotion.findOne({ name: badge.badgeEmotion }).exec();
+    if (!emotion) {
+      return res.status(404).json({
+        success: false,
+        error: `Emotion ${badge.badgeEmotion} not found!`,
+      });
+    }
     await badge.save(); // save document in the badges DB collection
     return res.status(201).json({
       success: true,
-      message: "New badge created.",
+      message: "New badge created!",
       URL: `/badges/${badge.badgeName}`,
     });
   } catch (err) {
@@ -35,7 +43,7 @@ exports.create = async (req, res) => {
       Object.keys(err.errors).forEach((key) => {
         errors.push(err.errors[key].message);
       });
-      return res.status(400).json({ success: false, messages: errors });
+      return res.status(400).json({ success: false, error: errors });
     }
     return res.status(500).json({
       success: false,
@@ -44,14 +52,24 @@ exports.create = async (req, res) => {
   }
 };
 
-// retrieve all badges / or find by title
 exports.findAll = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see all badges!",
+    });
+  }
+
   const emotion = req.query.emotion;
-  const condition = emotion ? { badgeEmotion: emotion } : {};
+  const title = req.query.title;
+  const filters = cleanEmptyObjectKeys({
+    badgeEmotion: emotion,
+    badgeName: title,
+  });
+
   try {
-    // find function parameters: filter, projection (select) / returns a list of documents
-    let data = await Badges.find(condition).select("-_id").exec(); // execute the query
-    return res.status(200).json({ success: true, data });
+    let badges = await Badge.find(filters).select("-_id").exec(); // execute the query
+    return res.status(200).json({ success: true, badges });
   } catch (err) {
     return res.status(500).json({
       success: false,
@@ -60,7 +78,6 @@ exports.findAll = async (req, res) => {
   }
 };
 
-// Delete a BADGE (given its id)
 exports.delete = async (req, res) => {
   if (req.typeUser !== "Administrador") {
     return res.status(403).json({
@@ -70,25 +87,24 @@ exports.delete = async (req, res) => {
   }
 
   try {
-    const badge = await Badges.findOneAndRemove({
+    const badge = await Badge.findOneAndRemove({
       badgeName: req.params.badge,
     }).exec();
     if (!badge) {
-      // returns the deleted document (if any) to the callback
       return res.status(404).json({
         success: false,
-        error: `Badge with name ${req.params.badge} not found.`,
+        error: `Badge with name ${req.params.badge} not found!`,
       });
     } else {
       return res.status(200).json({
         success: true,
-        message: `Badge with name ${req.params.badge} was deleted successfully.`,
+        message: `Badge with name ${req.params.badge} was deleted successfully!`,
       });
     }
   } catch (err) {
     res.status(500).json({
       success: false,
-      error: `Error deleting badge with name ${req.params.badge}.`,
+      error: `Some error occurred while deleting badge with name ${req.params.badge}.`,
     });
   }
 };
