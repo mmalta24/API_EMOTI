@@ -315,23 +315,56 @@ exports.update = async (req, res) => {
       error: "You don't have permission to update activities!",
     });
   }
+  if (
+    !req.body.level &&
+    !req.body.description &&
+    !req.body.questions &&
+    !req.body.caseIMG
+  ) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Please provide at least one of these items: level, description, questions and caseIMG!",
+    });
+  }
   try {
-    /*
-    await Activity.findOneAndUpdate(
-        { name: req.params.activityName, author: req.username },
-        {  },
-        {
-          returnOriginal: false, // to return the updated document
-          runValidators: true, // update validators on update command
-          useFindAndModify: false, //remove deprecation warning
-        }
-      ).exec();
-    */
+    let updateItems = {
+      level: req.body.level,
+      description: req.body.description,
+      questions: req.body.questions,
+      caseIMG: req.body.caseIMG,
+    };
+    updateItems = cleanEmptyObjectKeys(updateItems);
+
+    const activity = await Activity.findOneAndUpdate(
+      { title: req.params.activityName, author: req.username },
+      updateItems,
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: true, // update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    ).exec();
+
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        error: `Cannot find activity ${req.params.activityName} on your activities!`,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: `Activity ${req.params.activityName} was updated successfully!`,
     });
   } catch (err) {
+    if (err.name === "ValidationError") {
+      let errors = [];
+      Object.keys(err.errors).forEach((key) => {
+        errors.push(err.errors[key].message);
+      });
+      return res.status(400).json({ success: false, error: errors });
+    }
     return res.status(500).json({
       success: false,
       message: `Error updating activity ${req.params.activityName}!`,
