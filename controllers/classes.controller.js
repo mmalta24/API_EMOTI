@@ -446,7 +446,6 @@ exports.findAllStudents = async (req, res) => {
       error: "You don't have permission to get students from a class!",
     });
   }
-  console.log("yay");
   try {
     // check if class exists
     const classes = await Class.find({
@@ -464,7 +463,6 @@ exports.findAllStudents = async (req, res) => {
       .select("username name tutor -_id")
       .exec();
 
-    console.log("children", children);
     const list = classes.map((c) => ({ name: c.name, students: children }));
     return res.status(200).json({ success: true, list });
   } catch (err) {

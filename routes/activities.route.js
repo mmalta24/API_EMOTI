@@ -10,14 +10,17 @@ router
   .route("/")
   .get(authController.verifyToken, activitiesController.findAll)
   .post(authController.verifyToken, activitiesController.create);
-/*
+
 router
   .route("/:activityName")
+  .patch(authController.verifyToken, activitiesController.update)
   .delete(authController.verifyToken, activitiesController.delete);
-   */
+
+router
+  .route("/:activityName/children")
+  .post(authController.verifyToken, activitiesController.giveActivity);
 
 router.all("*", function (req, res) {
-  //send an predefined error message
   res.status(404).json({ message: "ACTIVITIES: what???" });
 });
 

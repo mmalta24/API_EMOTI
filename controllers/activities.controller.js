@@ -1,10 +1,10 @@
 const { cleanEmptyObjectKeys } = require("../helpers/index");
 const db = require("../models/index");
 const User = db.users;
+const Class = db.classes;
 const Activity = db.activities;
 const Emotion = db.emotions;
 
-// not finished - possible add to tutor/teacher
 exports.create = async (req, res) => {
   if (req.typeUser === "Criança") {
     return res.status(403).json({
@@ -127,26 +127,214 @@ exports.findAll = async (req, res) => {
   }
 };
 
-/*
-// Delete a ACTIVITY (given its title)
-exports.delete = async (req, res) => {
+exports.giveActivity = async (req, res) => {
+  // check if user who's giving is 'Professor' or 'Tutor' and has 'children' on body
+  if (req.typeUser !== "Professor" && req.typeUser !== "Tutor") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to give activity to children!",
+    });
+  }
+  if (
+    !req.body.list ||
+    req.body.list.length === 0 ||
+    typeof req.body.list !== "object"
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: "Please provide a list!",
+    });
+  }
   try {
-    const activity = await Activities.findOneAndRemove({
+    // check if activity exists and belongs to logged user
+    const activity = await Activity.findOne({
       title: req.params.activityName,
+      author: req.username,
     }).exec();
-    if (!activity)
-      // returns the deleted document (if any) to the callback
-      res.status(404).json({
-        message: `Activity ${req.params.activityName} not found.`,
+
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        error: `Activity ${req.params.activityName} not found on your personalized activities!`,
       });
-    else
-      res.status(200).json({
-        message: `Activity ${req.params.activityName} was deleted successfully.`,
+    }
+
+    // tutor
+    if (req.typeUser === "Tutor") {
+      // check if children are related
+      const children = await User.find({
+        username: { $in: req.body.list },
+        tutor: req.username,
+      }).exec();
+      if (req.body.list.length !== children.length) {
+        return res.status(400).json({
+          success: false,
+          error: `${
+            req.body.list.length - children.length
+          } children not found on your relations!`,
+        });
+      }
+      // check if activity already on children
+      const cActivities = await User.find({
+        username: { $in: req.body.list },
+        tutor: req.username,
+        activitiesSuggested: { $ne: req.params.activityName },
+      }).exec();
+      if (req.body.list.length !== cActivities.length) {
+        return res.status(400).json({
+          success: false,
+          error: `${
+            req.body.list.length - cActivities.length
+          } children have already activity ${req.params.activityName}!`,
+        });
+      }
+
+      // suggest activity
+      await User.updateMany(
+        { username: { $in: req.body.list } },
+        { $push: { activitiesSuggested: activity.title } }
+      ).exec();
+
+      return res.status(200).json({
+        success: true,
+        message: children.map(
+          (c) =>
+            `Activity ${req.params.activityName} added to child ${c.username}!`
+        ),
       });
+    }
+
+    // teacher
+    // check if all classes belong to user and all classes have students
+    const classes = await Class.find({
+      name: { $in: req.body.list },
+      teacher: req.username,
+      students: { $exists: true, $ne: [] },
+    }).exec();
+    if (req.body.list.length !== classes.length) {
+      return res.status(400).json({
+        success: false,
+        error: `${
+          req.body.list.length - classes.length
+        } classes doesn't exist or doesn't have students to give activities!`,
+      });
+    }
+    const students = classes.map((c) => c.students);
+    let studentsList = [];
+    for (const item of students) {
+      for (const name of item) {
+        studentsList.push(name);
+      }
+    }
+    // check if activity already on children
+    const cActivities = await User.find({
+      username: { $in: studentsList },
+      activitiesSuggested: { $ne: req.params.activityName },
+    }).exec();
+    if (req.body.list.length !== cActivities.length) {
+      return res.status(400).json({
+        success: false,
+        error: `${
+          req.body.list.length - cActivities.length
+        } class have already activity ${req.params.activityName}!`,
+      });
+    }
+    // suggest activity
+    await User.updateMany(
+      { username: { $in: studentsList } },
+      { $push: { activitiesSuggested: activity.title } }
+    ).exec();
+
+    // suggest activity to classes' children
+    return res.status(200).json({
+      success: true,
+      message: classes.map(
+        (c) =>
+          `Activity ${req.params.activityName} added to all children in class ${c.name}!`
+      ),
+    });
   } catch (err) {
-    res.status(500).json({
-      message: `Error deleting activity with title=${req.params.activityName}.`,
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Some error occurred while giving activitiy.",
     });
   }
 };
-*/
+
+exports.delete = async (req, res) => {
+  if (req.typeUser === "Criança") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to delete activities!",
+    });
+  }
+  try {
+    const activity = await Activity.findOneAndRemove({
+      title: req.params.activityName,
+      author: req.username,
+    }).exec();
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        message: `Activity ${req.params.activityName} not found!`,
+      });
+    }
+
+    // remove from children
+    await User.updateMany(
+      { typeUser: "Criança" },
+      { $pull: { activitiesSuggested: activity.title } }
+    ).exec();
+    // remove from author
+    await User.findOneAndUpdate(
+      { username: req.username },
+      { $pull: { activitiesPersonalized: activity.title } },
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: false, //runs update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    ).exec();
+
+    return res.status(200).json({
+      success: true,
+      message: `Activity ${req.params.activityName} was deleted successfully!`,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `Error deleting activity ${req.params.activityName}!`,
+    });
+  }
+};
+
+exports.update = async (req, res) => {
+  if (req.typeUser === "Criança") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to update activities!",
+    });
+  }
+  try {
+    /*
+    await Activity.findOneAndUpdate(
+        { name: req.params.activityName, author: req.username },
+        {  },
+        {
+          returnOriginal: false, // to return the updated document
+          runValidators: true, // update validators on update command
+          useFindAndModify: false, //remove deprecation warning
+        }
+      ).exec();
+    */
+    return res.status(200).json({
+      success: true,
+      message: `Activity ${req.params.activityName} was updated successfully!`,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: `Error updating activity ${req.params.activityName}!`,
+    });
+  }
+};
