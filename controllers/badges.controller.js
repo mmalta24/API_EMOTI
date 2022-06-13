@@ -1,9 +1,7 @@
 const db = require("../models");
 const Badges = db.badges;
-// Create and Save a new BADGE: use object.save()
 
 exports.create = async (req, res) => {
-  
   if (req.typeUser !== "Administrador") {
     return res.status(403).json({
       success: false,
@@ -12,7 +10,6 @@ exports.create = async (req, res) => {
   }
 
   const badge = new Badges({
-    // create an instance of a BADGE model
     badgeName: req.body.badgeName,
     badgeIMG: req.body.badgeIMG,
     pointsNeeded: req.body.pointsNeeded,
@@ -65,7 +62,6 @@ exports.findAll = async (req, res) => {
 
 // Delete a BADGE (given its id)
 exports.delete = async (req, res) => {
-
   if (req.typeUser !== "Administrador") {
     return res.status(403).json({
       success: false,

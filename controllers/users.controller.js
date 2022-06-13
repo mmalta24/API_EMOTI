@@ -121,7 +121,7 @@ exports.findOne = async (req, res) => {
   }
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select("username email typeUser name imgProfile -_id")
+      .select("username email typeUser name imgProfile badgesId children -_id")
       .exec(); // clean unnecessary object keys for profile
 
     return res.status(200).json({
