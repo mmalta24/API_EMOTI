@@ -2,6 +2,12 @@ const db = require("../models");
 const Emotion = db.emotions;
 
 exports.create = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to add new emotions!",
+    });
+  }
   const emotion = new Emotion({
     name: req.body.name,
   });
@@ -50,6 +56,12 @@ exports.findAll = async (req, res) => {
 };
 
 exports.remove = async (req, res) => {
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to remove emotions!",
+    });
+  }
   try {
     const emotion = await Emotion.findOneAndRemove({
       name: req.params.name,

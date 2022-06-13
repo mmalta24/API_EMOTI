@@ -3,6 +3,14 @@ const Badges = db.badges;
 // Create and Save a new BADGE: use object.save()
 
 exports.create = async (req, res) => {
+  
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to create new badges!",
+    });
+  }
+
   const badge = new Badges({
     // create an instance of a BADGE model
     badgeName: req.body.badgeName,
@@ -57,6 +65,14 @@ exports.findAll = async (req, res) => {
 
 // Delete a BADGE (given its id)
 exports.delete = async (req, res) => {
+
+  if (req.typeUser !== "Administrador") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to delete badges!",
+    });
+  }
+
   try {
     const badge = await Badges.findOneAndRemove({
       badgeName: req.params.badge,
