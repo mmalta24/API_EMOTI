@@ -626,10 +626,84 @@ exports.removeRelation = async (req, res) => {
   }
 };
 
-exports.addHistory = (req, res) => {
-  return res.status(200).json({ success: true, message: "OK" });
+const dateString = () => {
+  let newDate = new Date();
+  let day = String(newDate.getDate());
+  let month = String(newDate.getMonth() + 1);
+  let year = newDate.getFullYear();
+  return day + "/" + month + "/" + year;
 };
 
-exports.getHistory = (req, res) => {
-  return res.status(200).json({ success: true, message: "OK" });
+exports.addHistory = async (req, res) => {
+  if (req.typeUser !== "Criança") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to add to history!",
+    });
+  }
+  if (!req.body.title || !req.body.results || !req.body.pointsEarned) {
+    return res.status(400).json({
+      success: false,
+      error: "Please provide title, results and pointsEarned!",
+    });
+  }
+
+  const item = {
+    date: dateString(),
+    title: req.body.title,
+    results: req.body.results,
+    pointsEarned: req.body.pointsEarned,
+  };
+
+  const activity = await Activity.findOne({ title: item.title }).exec();
+
+  if (!activity) {
+    return res.status(404).json({
+      success: false,
+      error: `Activity ${item.title} not found!`,
+    });
+  }
+
+  await User.findOneAndUpdate(
+    { username: req.username },
+    { $push: { history: item } },
+    {
+      returnOriginal: false, // to return the updated document
+      runValidators: false, //runs update validators on update command
+      useFindAndModify: false, //remove deprecation warning
+    }
+  );
+
+  return res
+    .status(200)
+    .json({ success: true, message: "Activity added to history!", item });
+};
+
+exports.getHistory = async (req, res) => {
+  if (req.typeUser !== "Tutor") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to see children's history!",
+    });
+  }
+
+  const tutorChildren = await User.findOne({ username: req.username })
+    .select("children -_id")
+    .exec();
+
+  const children = await User.find({
+    username: { $in: tutorChildren.children },
+  })
+    .select("username history -_id")
+    .exec();
+
+  let history = [];
+
+  for (const child of children) {
+    for (const item of child.history) {
+      history.push({ username: child.username, item });
+    }
+  }
+
+  return res.status(200).json({ success: true, history });
 };
