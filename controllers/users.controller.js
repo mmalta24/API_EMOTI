@@ -701,7 +701,7 @@ exports.getHistory = async (req, res) => {
 
   for (const child of children) {
     for (const item of child.history) {
-      history.push({ username: child.username, item });
+      history.push({ username: child.username, ...item });
     }
   }
 

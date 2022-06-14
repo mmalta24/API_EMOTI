@@ -11,7 +11,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,9 @@
   },
   "homepage": "https://github.com/mmalta24/API_EMOTI#readme",
   "description": "",
+  "engines": {
+    "node": "16.x"
+  },
   "devDependencies": {
     "nodemon": "^2.0.16"
   }
