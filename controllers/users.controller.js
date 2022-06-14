@@ -4,6 +4,8 @@ const config = require("../config/config.js");
 const { cleanEmptyObjectKeys } = require("../helpers/index");
 const db = require("../models/index");
 const User = db.users;
+const Activity = db.activities;
+const Class = db.classes;
 
 exports.login = async (req, res) => {
   try {
@@ -374,11 +376,58 @@ exports.delete = async (req, res) => {
       });
     }
 
-    await User.findOneAndRemove({ username: req.params.username }).exec();
+    await User.findOneAndRemove({ username: user.username }).exec();
 
-    // teacher delete - delete classes + activities personalized
-    // tutor delete - delete child relations + activities personalized
-    // child delete - delete tutor relation
+    // remove all from teacher
+    if (user.typeUser === "Professor") {
+      // activities
+      await Activity.deleteMany({ author: user.username }).exec();
+      // classes
+      await Class.deleteMany({ teacher: user.username }).exec();
+    }
+    // remove all from tutor
+    else if (user.typeUser === "Tutor") {
+      // activities
+      await Activity.deleteMany({ author: user.username }).exec();
+      // classes
+      await Class.updateMany(
+        {},
+        {
+          $pull: {
+            requests: { $in: user.children },
+            students: { $in: user.children },
+          },
+        }
+      ).exec();
+      // users
+      await User.updateMany(
+        { tutor: user.username },
+        {
+          tutor: "",
+          $pull: {
+            activitiesSuggested: { $in: user.activitiesPersonalized },
+          },
+        }
+      ).exec();
+    }
+    // remove all from child
+    else {
+      // classes
+      await Class.updateMany(
+        {},
+        {
+          $pull: {
+            requests: { $in: user.username },
+            students: { $in: user.username },
+          },
+        }
+      ).exec();
+      // users
+      await User.updateOne(
+        { username: user.tutor },
+        { $pull: { children: user.username } }
+      ).exec();
+    }
 
     return res
       .status(200)
