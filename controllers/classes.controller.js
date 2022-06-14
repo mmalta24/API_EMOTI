@@ -80,7 +80,7 @@ exports.findChild = async (req, res) => {
     const childUser = await User.findOne({
       username: req.query.usernameChild,
     })
-      .select("name tutor typeUser points -_id")
+      .select("name tutor typeUser -_id")
       .exec();
     if (!childUser) {
       return res.status(404).json({
@@ -460,7 +460,7 @@ exports.findAllStudents = async (req, res) => {
     const children = await User.find({
       username: { $in: studentsList },
     })
-      .select("username name tutor -_id")
+      .select("username name tutor points -_id")
       .exec();
 
     const list = classes.map((c) => ({ name: c.name, students: children }));
