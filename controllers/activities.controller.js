@@ -84,6 +84,7 @@ exports.findAll = async (req, res) => {
   let queries = {
     level: req.query.level,
     category: req.query.category,
+    title: req.query.title,
   };
   queries = cleanEmptyObjectKeys(queries);
 
