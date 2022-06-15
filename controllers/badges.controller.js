@@ -53,7 +53,7 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-  if (req.typeUser !== "Administrador") {
+  if (req.typeUser !== "Administrador" && req.typeUser !== "Criança") {
     return res.status(403).json({
       success: false,
       error: "You don't have permission to see all badges!",
