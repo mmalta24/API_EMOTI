@@ -680,29 +680,33 @@ exports.addHistory = async (req, res) => {
 };
 
 exports.getHistory = async (req, res) => {
-  if (req.typeUser !== "Tutor") {
+  if (req.typeUser !== "Tutor" && req.typeUser !== "Criança") {
     return res.status(403).json({
       success: false,
       error: "You don't have permission to see children's history!",
     });
   }
-
-  const tutorChildren = await User.findOne({ username: req.username })
-    .select("children -_id")
-    .exec();
-
-  const children = await User.find({
-    username: { $in: tutorChildren.children },
-  })
-    .select("username history -_id")
-    .exec();
-
   let history = [];
 
-  for (const child of children) {
-    for (const item of child.history) {
-      history.push({ username: child.username, ...item });
+  if (req.typeUser === "Tutor") {
+    const tutorChildren = await User.findOne({ username: req.username })
+      .select("children -_id")
+      .exec();
+
+    const children = await User.find({
+      username: { $in: tutorChildren.children },
+    })
+      .select("username history -_id")
+      .exec();
+
+    for (const child of children) {
+      for (const item of child.history) {
+        history.push({ username: child.username, ...item });
+      }
     }
+  } else {
+    const child = await User.findOne({ username: req.username }).exec();
+    history = child.history;
   }
 
   return res.status(200).json({ success: true, history });
