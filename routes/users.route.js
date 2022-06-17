@@ -22,6 +22,10 @@ router
   .post(authController.verifyToken, usersController.addHistory);
 
 router
+  .route("/badges")
+  .patch(authController.verifyToken, usersController.addBadges);
+
+router
   .route("/:username")
   .get(authController.verifyToken, usersController.findOne)
   .patch(authController.verifyToken, usersController.update)

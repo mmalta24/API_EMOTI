@@ -6,6 +6,7 @@ const db = require("../models/index");
 const User = db.users;
 const Activity = db.activities;
 const Class = db.classes;
+const Badge = db.badges;
 
 exports.login = async (req, res) => {
   try {
@@ -655,30 +656,37 @@ exports.addHistory = async (req, res) => {
     pointsEarned: req.body.pointsEarned,
   };
 
-  const activity = await Activity.findOne({ title: item.title }).exec();
+  try {
+    const activity = await Activity.findOne({ title: item.title }).exec();
 
-  if (!activity) {
-    return res.status(404).json({
+    if (!activity) {
+      return res.status(404).json({
+        success: false,
+        error: `Activity ${item.title} not found!`,
+      });
+    }
+
+    const user = await User.findOne({ username: req.username }).exec();
+
+    await User.findOneAndUpdate(
+      { username: req.username },
+      { $push: { history: item }, points: user.points + item.pointsEarned },
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: false, //runs update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    );
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Activity added to history!", item });
+  } catch (err) {
+    return res.status(500).json({
       success: false,
-      error: `Activity ${item.title} not found!`,
+      error: `Some error occurred while adding history!`,
     });
   }
-
-  const user = await User.findOne({ username: req.username }).exec();
-
-  await User.findOneAndUpdate(
-    { username: req.username },
-    { $push: { history: item }, points: user.points + item.pointsEarned },
-    {
-      returnOriginal: false, // to return the updated document
-      runValidators: false, //runs update validators on update command
-      useFindAndModify: false, //remove deprecation warning
-    }
-  );
-
-  return res
-    .status(200)
-    .json({ success: true, message: "Activity added to history!", item });
 };
 
 exports.getHistory = async (req, res) => {
@@ -690,26 +698,80 @@ exports.getHistory = async (req, res) => {
   }
   let history = [];
 
-  if (req.typeUser === "Tutor") {
-    const tutorChildren = await User.findOne({ username: req.username })
-      .select("children -_id")
-      .exec();
+  try {
+    if (req.typeUser === "Tutor") {
+      const tutorChildren = await User.findOne({ username: req.username })
+        .select("children -_id")
+        .exec();
 
-    const children = await User.find({
-      username: { $in: tutorChildren.children },
-    })
-      .select("username history -_id")
-      .exec();
+      const children = await User.find({
+        username: { $in: tutorChildren.children },
+      })
+        .select("username history -_id")
+        .exec();
 
-    for (const child of children) {
-      for (const item of child.history) {
-        history.push({ username: child.username, ...item });
+      for (const child of children) {
+        for (const item of child.history) {
+          history.push({ username: child.username, ...item });
+        }
       }
+    } else {
+      const child = await User.findOne({ username: req.username }).exec();
+      history = child.history;
     }
-  } else {
-    const child = await User.findOne({ username: req.username }).exec();
-    history = child.history;
+
+    return res.status(200).json({ success: true, history });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: `Some error occurred while getting history!`,
+    });
+  }
+};
+
+exports.addBadges = async (req, res) => {
+  if (req.typeUser !== "Criança") {
+    return res.status(403).json({
+      success: false,
+      error: "You don't have permission to add badges to you!",
+    });
+  }
+  if (!req.body.badgeName) {
+    return res.status(400).json({
+      success: false,
+      error: "Please provide badgeName!",
+    });
   }
 
-  return res.status(200).json({ success: true, history });
+  try {
+    const badge = await Badge.findOne({ badgeName: req.body.badgeName }).exec();
+
+    if (!badge) {
+      return res.status(404).json({
+        success: false,
+        error: `Badge ${req.body.badgeName} not found!`,
+      });
+    }
+
+    const user = await User.findOne({ username: req.username }).exec();
+
+    await User.findOneAndUpdate(
+      { username: req.username },
+      { $push: { badgesId: req.body.badgeName } },
+      {
+        returnOriginal: false, // to return the updated document
+        runValidators: false, //runs update validators on update command
+        useFindAndModify: false, //remove deprecation warning
+      }
+    );
+
+    return res
+      .status(200)
+      .json({ success: true, message: "Badge added to user!" });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: `Some error occurred while adding badge!`,
+    });
+  }
 };
