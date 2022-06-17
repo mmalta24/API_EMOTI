@@ -671,8 +671,9 @@ exports.addHistory = async (req, res) => {
     await User.findOneAndUpdate(
       { username: req.username },
       {
-        $push: { history: item, questionsDone: item.results },
+        $push: { history: item },
         points: user.points + item.pointsEarned,
+        questionsDone: [...user.questionsDone, ...item.results],
       },
       {
         returnOriginal: false, // to return the updated document
