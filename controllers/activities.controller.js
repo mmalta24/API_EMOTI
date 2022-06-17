@@ -364,7 +364,7 @@ exports.suggestActivity = async (req, res) => {
     // check if activity already on children
     const cActivities = await User.find({
       username: { $in: studentsList },
-      activitiesSuggested: { $ne: req.params.activityName },
+      "activitiesSuggested.title": { $ne: req.params.activityName },
     }).exec();
     if (req.body.list.length !== cActivities.length) {
       return res.status(400).json({
@@ -377,7 +377,11 @@ exports.suggestActivity = async (req, res) => {
     // suggest activity
     await User.updateMany(
       { username: { $in: studentsList } },
-      { $push: { activitiesSuggested: activity.title } }
+      {
+        $push: {
+          activitiesSuggested: { title: activity.title, who: req.typeUser },
+        },
+      }
     ).exec();
 
     // suggest activity to classes' children
