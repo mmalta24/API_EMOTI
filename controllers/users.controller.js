@@ -670,7 +670,10 @@ exports.addHistory = async (req, res) => {
 
     await User.findOneAndUpdate(
       { username: req.username },
-      { $push: { history: item }, points: user.points + item.pointsEarned },
+      {
+        $push: { history: item, questionsDone: item.results },
+        points: user.points + item.pointsEarned,
+      },
       {
         returnOriginal: false, // to return the updated document
         runValidators: false, //runs update validators on update command
