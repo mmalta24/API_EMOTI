@@ -26,7 +26,7 @@ exports.createClass = async (req, res) => {
 
   try {
     const repeatedClass = await Class.findOne({
-      name: req.body.className,
+      name: req.body.className.replaceAll("?", ""),
       teacher: req.username,
     });
     if (repeatedClass) {

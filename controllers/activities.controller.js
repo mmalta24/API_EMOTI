@@ -14,7 +14,7 @@ exports.create = async (req, res) => {
   }
 
   const activity = new Activity({
-    title: req.body.title,
+    title: req.body.title.replaceAll("?", ""),
     level: req.body.level,
     questions: req.body.questions,
     caseIMG: req.body.caseIMG,
