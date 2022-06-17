@@ -18,7 +18,8 @@ router
 
 router
   .route("/:activityName/children")
-  .post(authController.verifyToken, activitiesController.giveActivity);
+  .post(authController.verifyToken, activitiesController.giveActivity)
+  .patch(authController.verifyToken, activitiesController.suggestActivity);
 
 router.all("*", function (req, res) {
   res.status(404).json({ message: "ACTIVITIES: what???" });
