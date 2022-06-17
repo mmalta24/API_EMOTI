@@ -109,7 +109,6 @@ exports.findAll = async (req, res) => {
     }
 
     // get child activities
-    queries.author = req.query.author;
     let child = await User.findOne({ username: req.username }).exec();
     let personalized = all.filter(
       (a) =>
@@ -118,7 +117,7 @@ exports.findAll = async (req, res) => {
     );
     return res.status(200).json({
       success: true,
-      activities: queries.author ? personalized : [...public, ...personalized],
+      activities: [...public, ...personalized],
     });
   } catch (err) {
     return res.status(500).json({
