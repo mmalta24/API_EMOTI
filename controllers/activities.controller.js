@@ -305,10 +305,11 @@ exports.suggestActivity = async (req, res) => {
         });
       }
       // check if activity already on children
+
       const cActivities = await User.find({
         username: { $in: req.body.list },
         tutor: req.username,
-        activitiesSuggested: { $ne: { title: req.params.activityName } },
+        "activitiesSuggested.title": { $ne: req.params.activityName },
       }).exec();
       if (req.body.list.length !== cActivities.length) {
         return res.status(400).json({
