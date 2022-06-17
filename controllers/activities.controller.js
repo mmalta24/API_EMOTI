@@ -14,7 +14,7 @@ exports.create = async (req, res) => {
   }
 
   const activity = new Activity({
-    title: req.body.title.replaceAll("?", ""),
+    title: req.body.title,
     level: req.body.level,
     questions: req.body.questions,
     caseIMG: req.body.caseIMG,
@@ -23,6 +23,7 @@ exports.create = async (req, res) => {
     author: req.username,
   });
   try {
+    activity.title.replaceAll("?", "");
     for (const question of activity.questions) {
       const emotion = await Emotion.findOne({
         name: question.correctAnswer,
