@@ -12,7 +12,7 @@ exports.create = async (req, res) => {
   }
 
   const badge = new Badge({
-    badgeName: req.body.badgeName.replaceAll("?", ""),
+    badgeName: req.body.badgeName,
     badgeIMG: req.body.badgeIMG,
     pointsNeeded: req.body.pointsNeeded,
     badgeEmotion: req.body.badgeEmotion,
