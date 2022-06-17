@@ -23,8 +23,7 @@ exports.create = async (req, res) => {
     author: req.username,
   });
   try {
-    let title = activity.title;
-    activity.title = title.replaceAll("?", "");
+    activity.title = activity.title.replace(/?/g, "");
     for (const question of activity.questions) {
       const emotion = await Emotion.findOne({
         name: question.correctAnswer,
