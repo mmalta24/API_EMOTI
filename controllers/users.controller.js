@@ -641,7 +641,7 @@ exports.addHistory = async (req, res) => {
       error: "You don't have permission to add to history!",
     });
   }
-  if (!req.body.title || !req.body.results || !req.body.pointsEarned) {
+  if (!req.body.title || !req.body.results || req.body.pointsEarned === null) {
     return res.status(400).json({
       success: false,
       error: "Please provide title, results and pointsEarned!",
